@@ -201,8 +201,10 @@ impl Repl {
                 self.handle_command(command.clone());
             }
         }
-
+        println!("mentat version a.b.c.d");
+        println!("Enter \".help\" for instructions");
         loop {
+
             let res = self.input_reader.read_input();
 
             match res {
