@@ -18,26 +18,26 @@ extern crate mentat;
 use std::u16;
 use std::str::FromStr;
 
-use clap::{App, Arg, SubCommand, AppSettings};
+use clap::{App, Arg, SubCommand, AppSettings, Command};
 
 use nickel::{Nickel, HttpRouter};
 
 fn main() {
     let app = App::new("Mentat").setting(AppSettings::ArgRequiredElseHelp);
-    let matches = app.subcommand(SubCommand::with_name("serve")
+    let matches = app.subcommand(Command::new("serve")
             .about("Starts a server")
-            .arg(Arg::with_name("debug")
+            .arg(Arg::new("debug")
                 .long("debug")
                 .help("Print debugging info"))
-            .arg(Arg::with_name("database")
-                .short("d")
+            .arg(Arg::new("database")
+                .short('d')
                 .long("database")
                 .value_name("FILE")
                 .help("Path to the Mentat database to serve")
                 .default_value("")
                 .takes_value(true))
-            .arg(Arg::with_name("port")
-                .short("p")
+            .arg(Arg::new("port")
+                .short('p')
                 .long("port")
                 .value_name("INTEGER")
                 .help("Port to serve from, i.e. `localhost:PORT`")
