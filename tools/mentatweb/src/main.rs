@@ -2,25 +2,55 @@ use std::io;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 
-use actix_web::{middleware, web, App, Error as AWError, HttpResponse, HttpServer};
+use actix_web::{middleware, web, App, Error as AWError, HttpRequest, HttpResponse, HttpServer};
 // use r2d2_sqlite::{self, SqliteConnectionManager};
 
 use mentat::{conn, new_connection, Conn, QueryResults, TypedValue, ValueType};
 
 /// Version 1: Calls 4 queries in sequential order, as an asynchronous handler
 async fn transact(
-    mut body: web::Payload,
-    db: web::Data<Mutex<rusqlite::Connection>>,
-    mentat: web::Data<Mutex<conn::Conn>>,
+    mut _body: web::Payload,
+    db: web::Data<Arc<Mutex<rusqlite::Connection>>>,
+    mentat: web::Data<Arc<Mutex<conn::Conn>>>,
 ) -> Result<HttpResponse, AWError> {
     let mut d = db.lock().unwrap();
     let mut m = mentat.lock().unwrap();
 
-    let body = ""; //@todo need to find a way to get this from the request
+    let body = "[{:db/ident       :visit/visitedOnDevice
+  :db/valueType   :db.type/ref
+  :db/cardinality :db.cardinality/one}
+ {:db/ident       :visit/visitAt
+  :db/valueType   :db.type/instant
+  :db/cardinality :db.cardinality/one}
+ {:db/ident       :site/visit
+  :db/valueType   :db.type/ref
+  :db/isComponent true
+  :db/cardinality :db.cardinality/many}
+ {:db/ident       :site/url
+  :db/valueType   :db.type/string
+  :db/unique      :db.unique/identity
+  :db/cardinality :db.cardinality/one
+  :db/index       true}
+ {:db/ident       :visit/page
+  :db/valueType   :db.type/ref
+  :db/isComponent true                    ; Debatable.
+  :db/cardinality :db.cardinality/one}
+ {:db/ident       :page/title
+  :db/valueType   :db.type/string
+  :db/fulltext    true
+  :db/index       true
+  :db/cardinality :db.cardinality/one}
+ {:db/ident       :visit/container
+  :db/valueType   :db.type/ref
+  :db/cardinality :db.cardinality/one}]"; //@todo need to find a way to get this from the request
 
-    let results = m.transact(&mut d, body).expect("Query failed");
+    let _results = m.transact(&mut d, body).expect("Query failed");
 
     Ok(HttpResponse::Ok().json("test"))
+}
+
+async fn index(_req: HttpRequest) -> &'static str {
+    "try 'POST /query' or 'POST /transact'"
 }
 
 #[actix_web::main]
@@ -44,7 +74,8 @@ async fn main() -> io::Result<()> {
             .app_data(web::Data::new(mutex_sql_db.clone()))
             .app_data(web::Data::new(mutex_mentat_db.clone()))
             .wrap(middleware::Logger::default())
-            .service(web::resource("/transact").route(web::get().to(transact)))
+            .service(web::resource("/").route(web::get().to(index)))
+            .service(web::resource("/transact").route(web::post().to(transact)))
     })
     .bind(("127.0.0.1", 8080))?
     .workers(2)
