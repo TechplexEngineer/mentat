@@ -1,13 +1,34 @@
+use std::collections::BTreeMap;
 use std::io;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 
-use actix_web::{middleware, web, App, Error as AWError, HttpRequest, HttpResponse, HttpServer};
-// use r2d2_sqlite::{self, SqliteConnectionManager};
+use actix_web::{
+    middleware, post, web, App, Error as AWError, HttpRequest, HttpResponse, HttpServer, Responder,
+    Result,
+};
+use mentat::{
+    conn, new_connection, Conn, DateTime, Entid, QueryResults, TxReport, TypedValue, Utc, ValueType,
+};
+use serde::Serialize;
 
-use mentat::{conn, new_connection, Conn, QueryResults, TypedValue, ValueType};
+#[derive(Serialize)]
+pub struct TransactResult {
+    /// The transaction ID of the transaction.
+    pub tx_id: Entid,
 
-/// Version 1: Calls 4 queries in sequential order, as an asynchronous handler
+    /// The timestamp when the transaction began to be committed.
+    pub tx_instant: DateTime<Utc>,
+
+    /// A map from string literal tempid to resolved or allocated entid.
+    ///
+    /// Every string literal tempid presented to the transactor either resolves via upsert to an
+    /// existing entid, or is allocated a new entid.  (It is possible for multiple distinct string
+    /// literal tempids to all unify to a single freshly allocated entid.)
+    pub tempids: BTreeMap<String, Entid>,
+}
+
+#[post("/transact")]
 async fn transact(
     mut _body: web::Payload,
     db: web::Data<Arc<Mutex<rusqlite::Connection>>>,
@@ -17,34 +38,55 @@ async fn transact(
     let mut m = mentat.lock().unwrap();
 
     let body = "[{:db/ident       :visit/visitedOnDevice
-  :db/valueType   :db.type/ref
-  :db/cardinality :db.cardinality/one}
- {:db/ident       :visit/visitAt
-  :db/valueType   :db.type/instant
-  :db/cardinality :db.cardinality/one}
- {:db/ident       :site/visit
-  :db/valueType   :db.type/ref
-  :db/isComponent true
-  :db/cardinality :db.cardinality/many}
- {:db/ident       :site/url
-  :db/valueType   :db.type/string
-  :db/unique      :db.unique/identity
-  :db/cardinality :db.cardinality/one
-  :db/index       true}
- {:db/ident       :visit/page
-  :db/valueType   :db.type/ref
-  :db/isComponent true                    ; Debatable.
-  :db/cardinality :db.cardinality/one}
- {:db/ident       :page/title
-  :db/valueType   :db.type/string
-  :db/fulltext    true
-  :db/index       true
-  :db/cardinality :db.cardinality/one}
- {:db/ident       :visit/container
-  :db/valueType   :db.type/ref
-  :db/cardinality :db.cardinality/one}]"; //@todo need to find a way to get this from the request
+          :db/valueType   :db.type/ref
+          :db/cardinality :db.cardinality/one}
+         {:db/ident       :visit/visitAt
+          :db/valueType   :db.type/instant
+          :db/cardinality :db.cardinality/one}
+         {:db/ident       :site/visit
+          :db/valueType   :db.type/ref
+          :db/isComponent true
+          :db/cardinality :db.cardinality/many}
+         {:db/ident       :site/url
+          :db/valueType   :db.type/string
+          :db/unique      :db.unique/identity
+          :db/cardinality :db.cardinality/one
+          :db/index       true}
+         {:db/ident       :visit/page
+          :db/valueType   :db.type/ref
+          :db/isComponent true                    ; Debatable.
+          :db/cardinality :db.cardinality/one}
+         {:db/ident       :page/title
+          :db/valueType   :db.type/string
+          :db/fulltext    true
+          :db/index       true
+          :db/cardinality :db.cardinality/one}
+         {:db/ident       :visit/container
+          :db/valueType   :db.type/ref
+          :db/cardinality :db.cardinality/one}]"; //@todo need to find a way to get this from the request
 
-    let _results = m.transact(&mut d, body).expect("Query failed");
+    let results: TxReport = m.transact(&mut d, body).expect("Query failed");
+
+    let obj = TransactResult {
+        tx_id: results.tx_id,
+        tx_instant: results.tx_instant,
+        tempids: results.tempids,
+    };
+
+    Ok(HttpResponse::Ok().json(obj))
+}
+
+async fn query(
+    mut _body: web::Payload,
+    db: web::Data<Arc<Mutex<rusqlite::Connection>>>,
+    mentat: web::Data<Arc<Mutex<conn::Conn>>>,
+) -> Result<HttpResponse, AWError> {
+    let mut d = db.lock().unwrap();
+    let m = mentat.lock().unwrap();
+
+    let body = ""; //@todo need to find a way to get this from the request
+
+    let _results = m.q_once(&mut d, body, None).expect("Query failed");
 
     Ok(HttpResponse::Ok().json("test"))
 }
@@ -75,7 +117,9 @@ async fn main() -> io::Result<()> {
             .app_data(web::Data::new(mutex_mentat_db.clone()))
             .wrap(middleware::Logger::default())
             .service(web::resource("/").route(web::get().to(index)))
-            .service(web::resource("/transact").route(web::post().to(transact)))
+            // .service(web::resource("/transact").route(web::post().to(transact)))
+            .service(transact)
+            .service(web::resource("/query").route(web::post().to(query)))
     })
     .bind(("127.0.0.1", 8080))?
     .workers(2)
