@@ -71,13 +71,15 @@ pub use crate::relresult::{RelResult, StructuredRelResult};
 
 use query_projector_traits::errors::{ProjectorError, Result};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+pub use serde::Serialize;
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct QueryOutput {
     pub spec: Rc<FindSpec>,
     pub results: QueryResults,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum QueryResults {
     Scalar(Option<Binding>),
     Tuple(Option<Vec<Binding>>),

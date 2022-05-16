@@ -1,5 +1,5 @@
 [package]
-edition = "2018"
+edition = "2021"
 authors = [
   "Richard Newman <rnewman@twinql.com>",
   "Nicholas Alexander <nalexander@mozilla.com>",
@@ -26,6 +26,7 @@ syncable = ["mentat_tolstoy", "tolstoy_traits", "mentat_db/syncable"]
 [workspace]
 members = [
   "tools/cli",
+  "tools/mentatweb",
   "ffi", "core", "core-traits","db", "db-traits", "edn", "public-traits", "query-algebrizer",
   "query-algebrizer-traits", "query-projector", "query-projector-traits","query-pull",
   "query-sql", "sql", "sql-traits", "tolstoy-traits", "tolstoy", "transaction"
@@ -51,6 +52,7 @@ lazy_static = "~1.4"
 time = "0.3.1"
 log = "~0.4"
 uuid = { version = "~0.8", features = ["v4", "serde"] }
+serde = { version = "~1.0", features = ["derive"] }
 
 [dependencies.rusqlite]
 version = "~0.26"
