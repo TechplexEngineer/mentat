@@ -1,8 +1,9 @@
 [package]
+edition = "2021"
 name = "neon-menat"
 version = "0.1.0"
 license = "ISC"
-edition = "2021"
+
 exclude = ["index.node"]
 
 [lib]
