@@ -1,34 +1,14 @@
-use std::collections::BTreeMap;
+
 use std::io;
-use std::ops::Deref;
-use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 use actix_web::{
-    middleware, post, web, App, Error as AWError, HttpRequest, HttpResponse, HttpServer, Responder,
+    middleware, post, web, App, Error as AWError, HttpRequest, HttpResponse, HttpServer,
     Result,
 };
 use mentat::{
-    conn, new_connection, Conn, DateTime, Entid, FindSpec, QueryResults, TxReport, TypedValue, Utc,
-    ValueType,
+    conn, new_connection, TxReport,
 };
-use serde::Serialize;
-
-#[derive(Serialize)]
-struct TransactResult { //this is a copy of mentat::TxReport
-    /// The transaction ID of the transaction.
-    pub tx_id: Entid,
-
-    /// The timestamp when the transaction began to be committed.
-    pub tx_instant: DateTime<Utc>,
-
-    /// A map from string literal tempid to resolved or allocated entid.
-    ///
-    /// Every string literal tempid presented to the transactor either resolves via upsert to an
-    /// existing entid, or is allocated a new entid.  (It is possible for multiple distinct string
-    /// literal tempids to all unify to a single freshly allocated entid.)
-    pub tempids: BTreeMap<String, Entid>,
-}
 
 #[post("/transact")]
 async fn transact(
@@ -41,13 +21,7 @@ async fn transact(
 
     let results: TxReport = m.transact(&mut d, req_body).expect("Query failed");
 
-    let obj = TransactResult {
-        tx_id: results.tx_id,
-        tx_instant: results.tx_instant,
-        tempids: results.tempids,
-    };
-
-    Ok(HttpResponse::Ok().json(obj))
+    Ok(HttpResponse::Ok().json(results))
 }
 
 #[post("/query")]
@@ -65,7 +39,7 @@ async fn query(
     let qres: mentat::query::QueryOutput =
         m.q_once(&mut d, &req_body, inputs).expect("Query failed");
 
-    Ok(HttpResponse::Ok().json(qres))//@todo
+    Ok(HttpResponse::Ok().json(qres.spec))//@todo
     // Ok(HttpResponse::Ok().json("test"))
 }
 
