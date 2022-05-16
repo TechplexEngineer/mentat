@@ -16,8 +16,10 @@ use core_traits::Entid;
 
 use crate::{DateTime, Utc};
 
+use serde::Serialize;
+
 /// A transaction report summarizes an applied transaction.
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialOrd, PartialEq, Serialize)]
 pub struct TxReport {
     /// The transaction ID of the transaction.
     pub tx_id: Entid,

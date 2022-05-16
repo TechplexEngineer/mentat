@@ -71,6 +71,10 @@ pub use crate::relresult::{RelResult, StructuredRelResult};
 
 use query_projector_traits::errors::{ProjectorError, Result};
 
+pub use serde::Serialize;
+
+extern crate serde;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct QueryOutput {
     pub spec: Rc<FindSpec>,

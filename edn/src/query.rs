@@ -41,9 +41,11 @@ use crate::value_rc::{FromRc, ValueRc};
 
 pub use crate::{Keyword, PlainSymbol};
 
+use serde::Serialize;
+
 pub type SrcVarName = String; // Do not include the required syntactic '$'.
 
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
 pub struct Variable(pub Rc<PlainSymbol>);
 
 impl Variable {
@@ -111,7 +113,7 @@ impl std::fmt::Display for Variable {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 pub struct QueryFunction(pub PlainSymbol);
 
 impl FromValue<QueryFunction> for QueryFunction {
@@ -147,7 +149,7 @@ pub enum Direction {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Order(pub Direction, pub Variable); // Future: Element instead of Variable?
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 pub enum SrcVar {
     DefaultSrc,
     NamedSrc(SrcVarName),
@@ -178,7 +180,7 @@ impl SrcVar {
 }
 
 /// These are the scalar values representable in EDN.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub enum NonIntegerConstant {
     Boolean(bool),
     BigInteger(BigInt),
@@ -200,7 +202,7 @@ impl From<String> for NonIntegerConstant {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub enum FnArg {
     Variable(Variable),
     SrcVar(SrcVar),
@@ -460,13 +462,13 @@ impl PatternValuePlace {
 //     Constant(NonIntegerConstant),
 // }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub enum PullConcreteAttribute {
     Ident(Rc<Keyword>),
     Entid(i64),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct NamedPullAttribute {
     pub attribute: PullConcreteAttribute,
     pub alias: Option<Rc<Keyword>>,
@@ -481,7 +483,7 @@ impl From<PullConcreteAttribute> for NamedPullAttribute {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub enum PullAttributeSpec {
     Wildcard,
     Attribute(NamedPullAttribute),
@@ -518,19 +520,19 @@ impl std::fmt::Display for PullAttributeSpec {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct Pull {
     pub var: Variable,
     pub patterns: Vec<PullAttributeSpec>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct Aggregate {
     pub func: QueryFunction,
     pub args: Vec<FnArg>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub enum Element {
     Variable(Variable),
     Aggregate(Aggregate),
@@ -615,7 +617,7 @@ pub enum Limit {
 /// }
 /// ```
 ///
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub enum FindSpec {
     /// Returns an array of arrays, represented as a single array with length a multiple of width.
     FindRel(Vec<Element>),

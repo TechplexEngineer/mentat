@@ -12,6 +12,8 @@ use std::fmt::{Display, Formatter, Write};
 
 use crate::namespaceable_name::NamespaceableName;
 
+use serde::Serialize;
+
 #[macro_export]
 macro_rules! ns_keyword {
     ($ns: expr, $name: expr) => {{
@@ -20,7 +22,7 @@ macro_rules! ns_keyword {
 }
 
 /// A simplification of Clojure's Symbol.
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialOrd, PartialEq, Serialize)]
 pub struct PlainSymbol(pub String);
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
